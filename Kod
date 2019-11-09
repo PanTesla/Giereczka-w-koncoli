@@ -1,0 +1,154 @@
+#include <iostream>
+#include <cstdlib>
+#include <windows.h>
+#include <stdio.h>
+#include <conio.h>
+
+using namespace std;
+
+int powrot_do_menu=0;
+string nick;
+
+void menu_glowne();
+void menu_gry_wyswietlanie();
+void wczytanie_save();
+void zapisanie_save();
+void gra();
+
+int main()
+{
+    while(true)
+    {
+    menu_glowne();
+
+    char menu_wybor;
+    menu_wybor=getch();
+    switch(menu_wybor)
+    {
+    case '1':
+        {
+            system("cls");
+            cout<<"Nazwij swoja postac:"<<endl;
+            getline(cin,nick);
+
+            powrot_do_menu=0;
+            while(powrot_do_menu==0)
+            {
+                menu_gry_wyswietlanie();
+                gra();
+                //menu_wybor=getch();
+
+            }
+        }
+    break;
+    case '2':
+        {
+            system("cls");
+            wczytanie_save();
+
+        }
+    break;
+    case '3':
+        {
+            exit(0);
+        }
+    break;
+    default:
+        {
+            cout<<"Brak wybranej opcji!"<<endl;
+            Sleep(500);
+        }
+    }
+
+
+    }
+    return 0;
+}
+
+int rog_l_g=218,poz_kres=196,rog_p_g=191,  trojnik_prawo=195,trojnik_lewo=180;
+int pion_kres=179;
+int rog_l_d=192              ,rog_p_d=217;
+
+void menu_glowne()
+{
+    system("cls");
+    cout<<char(rog_l_g); for(int i=0; i<21; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
+    cout<<char(pion_kres)<<"Witaj w grze Wojownik"<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<21; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+    cout<<char(pion_kres)<<"1. Nowa gra.         "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"2. Kontynuuj.        "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"3. Wyjdz z gry.      "<<char(pion_kres)<<endl;
+    cout<<char(rog_l_d); for(int i=0; i<21; i++) cout<<char(poz_kres); cout<<char(rog_p_d)<<endl;
+}
+
+void menu_gry_wyswietlanie()
+{
+    system("cls");
+    cout<<char(rog_l_g); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
+    cout<<char(pion_kres)<<"        MENU GRY        "<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+    cout<<char(pion_kres)<<"1. Rozpocznij kampanie. "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"2. Wejdz do miasta.     "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"3. Ekwipunek.           "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"4. Glosariusz.          "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"5. Statystyki.          "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"6. Opcje.               "<<char(pion_kres)<<endl;
+  //cout<<char(pion_kres)<<"                       "<<char(pion_kres)<<endl;
+    cout<<char(rog_l_d); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(rog_p_d)<<endl;
+}
+
+void wczytanie_save()
+{
+    Sleep(1000);
+}
+
+void zapisanie_save()
+{
+    system("cls");
+    cout<<"Gra zostala zapisana.";
+    Sleep(1000);
+}
+
+void gra()
+{
+    char wybor_opcji;
+    wybor_opcji=getch();
+
+    switch(wybor_opcji)
+    {
+    case '1':
+        {
+            cout<<"No tak.";
+            Sleep(1000);
+        }
+    break;
+    case '6':
+        {
+            int opcje=0;
+            while(opcje==0)
+            {
+            system("cls");
+            cout<<"Opcje."<<endl;
+            cout<<"1. Powrot do gry."<<endl;
+            cout<<"2. Zapisz gre."<<endl;
+            cout<<"3. Wroc do menu glownego."<<endl;
+
+            //char wybor_opcje;
+            wybor_opcji=getch();
+            switch(wybor_opcji)
+            {
+                case '1': opcje=1; break;
+                case '2': zapisanie_save(); break;
+                case '3': {opcje=1; powrot_do_menu=1;} break;
+                 default: { cout<<"Brak wybranej opcji!"<<endl; Sleep(500);}
+            }
+            }
+        }
+    break;
+    default:
+    {
+        cout<<"Brak wybranej opcji!"<<endl;
+        Sleep(500);
+    }
+    }
+}
