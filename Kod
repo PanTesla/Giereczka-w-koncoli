@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <conio.h>
+#include <fstream>
 
 using namespace std;
 
@@ -14,6 +15,7 @@ void menu_gry_wyswietlanie();
 void wczytanie_save();
 void zapisanie_save();
 void gra();
+void gra_opcje();
 
 int main()
 {
@@ -36,15 +38,19 @@ int main()
             {
                 menu_gry_wyswietlanie();
                 gra();
-                //menu_wybor=getch();
-
             }
         }
     break;
     case '2':
         {
             system("cls");
+            powrot_do_menu=0;
             wczytanie_save();
+            while(powrot_do_menu==0)
+            {
+                menu_gry_wyswietlanie();
+                gra();
+            }
 
         }
     break;
@@ -83,9 +89,16 @@ void menu_glowne()
 
 void menu_gry_wyswietlanie()
 {
+    int dlugosc_nicku, miejsce;
+    dlugosc_nicku=nick.length();
+    miejsce=24-dlugosc_nicku;
+
     system("cls");
     cout<<char(rog_l_g); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
     cout<<char(pion_kres)<<"        MENU GRY        "<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+    cout<<char(pion_kres); for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<nick; if(dlugosc_nicku%2!=0){cout<<" ";} for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+
     cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
     cout<<char(pion_kres)<<"1. Rozpocznij kampanie. "<<char(pion_kres)<<endl;
     cout<<char(pion_kres)<<"2. Wejdz do miasta.     "<<char(pion_kres)<<endl;
@@ -99,6 +112,24 @@ void menu_gry_wyswietlanie()
 
 void wczytanie_save()
 {
+    fstream plik;
+    plik.open("Zapisy gry/save.txt",ios::in);
+    if(plik.good()==false)
+    {
+        cout<<"Brak dostepnego zapisu gry!";
+        powrot_do_menu=1;
+    }
+    else
+    {
+    cout<<"Gra jest wczytywana.";
+    string linia;
+    while(getline(plik,linia))
+    {
+       if(linia.find("Nick:")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); nick=linia;}
+       //if(linia.find("jeden")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); liczba=atoi(linia.c_str());}
+    }
+    }
+    plik.close();
     Sleep(1000);
 }
 
@@ -106,7 +137,15 @@ void zapisanie_save()
 {
     system("cls");
     cout<<"Gra zostala zapisana.";
-    Sleep(1000);
+
+    fstream plik;
+    plik.open("Zapisy gry/save.txt",ios::out);
+
+    plik<<"Nick: "<<nick<<endl;
+
+
+    plik.close();
+    Sleep(500);
 }
 
 void gra()
@@ -124,25 +163,7 @@ void gra()
     break;
     case '6':
         {
-            int opcje=0;
-            while(opcje==0)
-            {
-            system("cls");
-            cout<<"Opcje."<<endl;
-            cout<<"1. Powrot do gry."<<endl;
-            cout<<"2. Zapisz gre."<<endl;
-            cout<<"3. Wroc do menu glownego."<<endl;
-
-            //char wybor_opcje;
-            wybor_opcji=getch();
-            switch(wybor_opcji)
-            {
-                case '1': opcje=1; break;
-                case '2': zapisanie_save(); break;
-                case '3': {opcje=1; powrot_do_menu=1;} break;
-                 default: { cout<<"Brak wybranej opcji!"<<endl; Sleep(500);}
-            }
-            }
+            gra_opcje();
         }
     break;
     default:
@@ -150,5 +171,32 @@ void gra()
         cout<<"Brak wybranej opcji!"<<endl;
         Sleep(500);
     }
+    }
+}
+
+void gra_opcje()
+{
+    int opcje=0;
+
+    while(opcje==0)
+    {
+        system("cls");
+        cout<<char(rog_l_g); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
+        cout<<char(pion_kres)<<"          OPCJE           "<<char(pion_kres)<<endl;
+        cout<<char(trojnik_prawo); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+        cout<<char(pion_kres)<<"1. Powrot do gry.         "<<char(pion_kres)<<endl;
+        cout<<char(pion_kres)<<"2. Zapisz gre.            "<<char(pion_kres)<<endl;
+        cout<<char(pion_kres)<<"3. Wroc do menu glownego. "<<char(pion_kres)<<endl;
+        cout<<char(rog_l_d); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(rog_p_d)<<endl;
+
+        char wybor_opcji;
+        wybor_opcji=getch();
+        switch(wybor_opcji)
+        {
+            case '1': opcje=1; break;
+            case '2': zapisanie_save(); break;
+            case '3': {opcje=1; powrot_do_menu=1;} break;
+            default: { cout<<"Brak wybranej opcji!"<<endl; Sleep(500);}
+        }
     }
 }
