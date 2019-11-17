@@ -10,9 +10,12 @@
 using namespace std;
 string nick;
 int powrot_do_menu=0;
-int atak_gracz,zycie_gracz,obrona_gracz;
+int atak_gracz,zycie_gracz,obrona_gracz, lvl_gracz=1, lvl_przeciwnik=1;
 int staty_sila=0,staty_wytrzymalosc=0,staty_odpornosc=0,staty_szczescie=0,staty_szybkosc=0, dostepne=20, rozdane;
 int staty_suma_sila=1,staty_suma_wytrzymalosc=1,staty_suma_odpornosc=1,staty_suma_szczescie=1,staty_suma_szybkosc=1;
+int walka_trwa=0, ukonczone_kampanie=0, atak_obliczony;
+
+
 
 
 void nazwanie_postaci();
@@ -23,12 +26,21 @@ void zapisanie_save();
 void gra();
 void gra_opcje();
 void gra_kampania();
+void gra_kampania_menu_gry(int nr_walki,int atak_przeciwnik,int zycie_przeciwnik,int obrona_przeciwnik,int czyja_tura,string rodzaj_przecwnika);
 void statystyki();
 void obliczanie_statystyk();
-void kampania_przeciwnik ();
+int kampania_przeciwnik (int *atak, int *zycie, int *obrona, int *rodzaj);
+void obliczanie_atak(int wybrany_atak,int rodzaj_przecwnika_int,int szczescie, int lvl_gracz, int lvl_przeciwnik,int obrona_przeciwnik, int atak_gracz, int czyja_tura);
+void wyswietlanie_ataku(int atak_obliczenia, int zadane_obrazenia, int czyja_tura,int wybrany_atak);
+void przebieg_walki_wglad();
+void przebieg_walki_zapis(int atak_obliczenia, int zadane_obrazenia, int czyja_tura);
+//int kampania_przeciwnik (int atak);
+
+
 
 int main()
 {
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7);
     while(true)
     {
     menu_glowne();
@@ -84,8 +96,8 @@ int main()
     return 0;
 }
 
-int rog_l_g=218,poz_kres=196,rog_p_g=191,  trojnik_prawo=195,trojnik_lewo=180;
-int pion_kres=179;
+int rog_l_g=218,poz_kres=196,rog_p_g=191,  trojnik_prawo=195,trojnik_lewo=180, trojnik_dol=194 ,trojnik_gora=193;
+int pion_kres=179, krzyzyk=197;
 int rog_l_d=192              ,rog_p_d=217;
 
 void nazwanie_postaci()
@@ -94,10 +106,10 @@ void nazwanie_postaci()
             cout<<"Nazwij swoją postać:"<<endl;
             getline(cin,nick);
             int dlugosc_nicku;
-            if(dlugosc_nicku=nick.length()>24)
+            if(dlugosc_nicku=nick.length()>17)
             {
             system("cls");
-            cout<<"Nazwa jest zbyt długa! Maksymalnie 24 znaki."<<endl;
+            cout<<"Nazwa jest zbyt długa! Maksymalnie 17 znaki."<<endl;
             Sleep(1000);
             nazwanie_postaci();
             }
@@ -137,7 +149,7 @@ void menu_gry_wyswietlanie()
     cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
     cout<<char(pion_kres)<<"1. Rozpocznij kampanię. "<<char(pion_kres)<<endl;
     cout<<char(pion_kres)<<"2. Wejdź do miasta.     "<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"3. Postać.           "<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"3. Postać.              "<<char(pion_kres)<<endl;
     cout<<char(pion_kres)<<"4. Glosariusz.          "<<char(pion_kres)<<endl;
     cout<<char(pion_kres)<<"5. Statystyki.          "<<char(pion_kres)<<endl;
     cout<<char(pion_kres)<<"6. Opcje.               "<<char(pion_kres)<<endl;
@@ -168,7 +180,9 @@ void wczytanie_save()
        if(linia.find("Staty odpornosc:")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); staty_odpornosc=atoi(linia.c_str());}
        if(linia.find("Staty szczescie:")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); staty_szczescie=atoi(linia.c_str());}
        if(linia.find("Staty szybkosc:")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); staty_szybkosc=atoi(linia.c_str());}
-       //if(linia.find("jeden")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); liczba=atoi(linia.c_str());}
+       if(linia.find("Lvl gracza:")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); lvl_gracz=atoi(linia.c_str());}
+       if(linia.find("Ukonczone kampanie")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); ukonczone_kampanie=atoi(linia.c_str());}
+       //if(linia.find("")!=string::npos) {size_t pozycja=linia.find(":"); linia.erase(0,pozycja+1); =atoi(linia.c_str());}
     }
     }
     plik.close();
@@ -191,6 +205,9 @@ void zapisanie_save()
     plik<<"Staty odpornosc:"<<staty_odpornosc<<endl;
     plik<<"Staty szczescie:"<<staty_szczescie<<endl;
     plik<<"Staty szybkosc:"<<staty_szybkosc<<endl;
+    plik<<"Lvl gracza:"<<lvl_gracz<<endl;
+    plik<<"Ukonczone kampanie:"<<ukonczone_kampanie<<endl;
+    //plik<<":"<<<<endl;
 
 
     plik.close();
@@ -256,42 +273,59 @@ void gra_opcje()
 
 void gra_kampania()
 {
-    int nr_walki=1, dlugosc_nicku, miejsce, poddanie=0;
-    dlugosc_nicku=nick.length();
-    miejsce=24-dlugosc_nicku;
-    obliczanie_statystyk();
+    int nr_walki=1, poddanie=0;
+    int atak_przeciwnik=0, zycie_przeciwnik=0, obrona_przeciwnik=0, szczescie_przeciwnik=0, szybkosc_przeciwnik=0;
+
+
+    srand(time(NULL));
+    int rodzaj_przecwnika_int;
+    string rodzaj_przecwnika;
+
+    int czyja_tura=0; //0 - gracza, 1 - przeciwnika;
+
+    //rodzaj_przecwnika_int=rand()%3;
+    rodzaj_przecwnika_int=0;
+    if(rodzaj_przecwnika_int==0) rodzaj_przecwnika="Szybki rozbojnik";
+    if(rodzaj_przecwnika_int==1) rodzaj_przecwnika="Silny wojownik";
+    if(rodzaj_przecwnika_int==2) rodzaj_przecwnika="Wilk";
+
+
+    kampania_przeciwnik(&atak_przeciwnik,&zycie_przeciwnik,&obrona_przeciwnik,&rodzaj_przecwnika_int);
+    //atak_przeciwnik=kampania_przeciwnik(atak_przeciwnik);
+
+    fstream plik;
+    plik.open("przebieg_walki.txt",ios::out|ios::trunc);
+    plik.close();
 
 
     while(poddanie==0)
     {
-    system("cls");
-    cout<<char(rog_l_g); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
-    cout<<char(pion_kres)<<"  KAMPANIA - Walka: "; if(nr_walki<10){cout<<"0";}cout<<nr_walki<<"  "<<char(pion_kres)<<endl;
-    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
-    cout<<char(pion_kres); for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<nick; if(dlugosc_nicku%2!=0){cout<<" ";} for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Atak:   "<<atak_gracz<<"      "; if(atak_gracz<10){cout<<"  ";}else if(atak_gracz<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Zycie:  "<<zycie_gracz<<"      "; if(zycie_gracz<10){cout<<"  ";}else if(zycie_gracz<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Obrona: "<<obrona_gracz<<"      "; if(obrona_gracz<10){cout<<"  ";}else if(obrona_gracz<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
-                            kampania_przeciwnik ();
+        gra_kampania_menu_gry(nr_walki,atak_przeciwnik,zycie_przeciwnik,obrona_przeciwnik,czyja_tura, rodzaj_przecwnika);
 
-    cout<<char(pion_kres)<<"         AKCJA          "<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"1. Silny atak.          "<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"2. Szybki atak.         "<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"3. Ekwipunek.           "<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"4. Opcje.               "<<char(pion_kres)<<endl;
-    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
-
-    char wybor_opcji;
-    wybor_opcji=getch();
-    switch(wybor_opcji)
+        char wybor_opcji;
+        wybor_opcji=getch();
+        switch(wybor_opcji)
     {
     case '1':
         {
-            cout<<"Silny atak"<<endl;
+            int atak=1;
+            obliczanie_atak(atak, rodzaj_przecwnika_int, staty_szczescie, lvl_gracz, lvl_przeciwnik, obrona_przeciwnik, atak_gracz, czyja_tura);
+            Sleep(100);
+        }
+    break;
+    case '2':
+        {
+            int atak=0;
+            obliczanie_atak(atak, rodzaj_przecwnika_int,staty_szczescie, lvl_gracz, lvl_przeciwnik, obrona_przeciwnik, atak_gracz, czyja_tura);
+            Sleep(100);
         }
     break;
     case '4':
+        {
+            przebieg_walki_wglad();
+        }
+    break;
+    case '5':
         {
             int opcje=0;
             while(opcje==0)
@@ -320,6 +354,39 @@ void gra_kampania()
     }
 
     }
+}
+void gra_kampania_menu_gry(int nr_walki,int atak_przeciwnik,int zycie_przeciwnik,int obrona_przeciwnik, int czyja_tura, string rodzaj_przecwnika)
+{
+    int dlugosc_nicku, dlugosc_nazwy, miejsce, miejsce2;
+    dlugosc_nicku=nick.length(); miejsce=26-dlugosc_nicku-9;
+    dlugosc_nazwy=rodzaj_przecwnika.length(); miejsce2=26-dlugosc_nazwy-9;
+
+    obliczanie_statystyk();
+
+    system("cls");
+                      cout<<char(rog_l_g);      for(int i=0; i<53; i++)     {cout<<char(poz_kres);} cout<<char(rog_p_g)<<endl;
+                      cout<<char(pion_kres);    for(int i=0; i<53/2-10; i++){cout<<" ";}  cout<<"KAMPANIA - Walka: "; if(nr_walki<10){cout<<"0";}{cout<<nr_walki;} for(int i=0; i<53/2-9; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    if(czyja_tura==0){cout<<char(pion_kres);    for(int i=0; i<53/2-5; i++) {cout<<" ";}  cout<<"Twoja tura";         for(int i=0; i<53/2-4; i++){cout<<" ";} cout<<char(pion_kres)<<endl;}
+    if(czyja_tura==1){cout<<char(pion_kres);    for(int i=0; i<53/2-8; i++) {cout<<" ";}  cout<<"Tura przeciwnika";   for(int i=0; i<53/2-7; i++){cout<<" ";} cout<<char(pion_kres)<<endl;}
+                      cout<<char(trojnik_prawo);for(int i=0; i<26; i++)     {cout<<char(poz_kres);} cout<<char(trojnik_dol); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+
+    cout<<char(pion_kres)<<" "<<nick<<" "<<lvl_gracz<<"lvl"; if(dlugosc_nicku%2!=0){cout<<" ";} if(lvl_gracz<10){cout<<"  ";}else if(lvl_gracz<100){cout<<" ";} for(int i=0; i<miejsce; i++){cout<<" ";};
+    cout<<char(pion_kres)<<" "<<rodzaj_przecwnika<<" "<<lvl_przeciwnik<<"lvl"; if(dlugosc_nazwy%2==0){cout<<" ";} if(lvl_przeciwnik<10){cout<<"  ";}else if(lvl_przeciwnik<100){cout<<" ";} for(int i=0; i<miejsce2; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"        Atak:   "<<atak_gracz<<"       ";       if(atak_gracz<10)       {cout<<"  ";}   else if(atak_gracz<100)         {cout<<" ";};
+    cout<<char(pion_kres)<<"        Atak:   "<<atak_przeciwnik<<"       ";  if(atak_przeciwnik<10)  {cout<<"  ";}   else if(atak_przeciwnik<100)    {cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"        Zycie:  "<<zycie_gracz<<"       ";      if(zycie_gracz<10)      {cout<<"  ";}   else if(zycie_gracz<100)        {cout<<" ";};
+    cout<<char(pion_kres)<<"        Zycie:  "<<zycie_przeciwnik<<"       "; if(zycie_przeciwnik<10) {cout<<"  ";}   else if(zycie_przeciwnik<100)   {cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"        Obrona: "<<obrona_gracz<<"       ";     if(obrona_gracz<10)     {cout<<"  ";}   else if(obrona_gracz<100)       {cout<<" ";};
+    cout<<char(pion_kres)<<"        Obrona: "<<obrona_przeciwnik<<"       ";if(obrona_przeciwnik<10){cout<<"  ";}   else if(obrona_przeciwnik<100)  {cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_gora); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+
+    cout<<char(pion_kres); for(int i=0; i<53/2-2; i++) {cout<<" ";} cout<<"AKCJA"; for(int i=0; i<53/2-2; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"1. Silny atak.";      for(int i=0; i<53-14; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"2. Szybki atak.";     for(int i=0; i<53-15; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"3. Ekwipunek.";       for(int i=0; i<53-13; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"4. Przebieg walki.";  for(int i=0; i<53-18; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(pion_kres)<<"5. Opcje.";           for(int i=0; i<53-9; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(poz_kres); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
 }
 
 void statystyki()
@@ -389,32 +456,190 @@ void obliczanie_statystyk()
 
     atak_gracz=1; zycie_gracz=1; obrona_gracz=1;
 
+    int zbroja=0;
     atak_gracz=staty_suma_sila*1.5;
     zycie_gracz=staty_suma_wytrzymalosc*1.5;
-    obrona_gracz=staty_suma_odpornosc*1.5;
+    obrona_gracz=staty_suma_odpornosc*1.5+0.5*zbroja;
 }
 
-void kampania_przeciwnik ()
+int kampania_przeciwnik (int *atak, int *zycie, int *obrona, int *rodzaj)
 {
-    srand(time(NULL));
-    int rodzaj_przecwnika_int;
-    string rodzaj_przecwnika;
+    lvl_przeciwnik=lvl_gracz+0.5*ukonczone_kampanie;
 
-    int atak_przeciwnik=0, zycie_przeciwnik=0, obrona_przeciwnik=0, szczescie_przeciwnik=0, szybkosc_przeciwnik=0;
+    if(*rodzaj==0) //szybki
+    {
+        *atak=lvl_przeciwnik*2.5+10;
+        *zycie=lvl_przeciwnik*1.5+10;
+        *obrona=lvl_przeciwnik*1+10;
+    }
+    else if(*rodzaj==1) //silny
+    {
+        *atak=lvl_przeciwnik*4+10;
+        *zycie=lvl_przeciwnik*2.5+10;
+        *obrona=lvl_przeciwnik*4+10;
+    }
+    else if(*rodzaj==2) //wilk
+    {
+        *atak=lvl_przeciwnik*3+10;
+        *zycie=lvl_przeciwnik*4+10;
+        *obrona=lvl_przeciwnik*2+10;
+    }
 
-    rodzaj_przecwnika_int=rand()%3;
-    if(rodzaj_przecwnika_int==0) rodzaj_przecwnika="Szybki rozbójnik";
-    if(rodzaj_przecwnika_int==1) rodzaj_przecwnika="Silny wojownik";
-    if(rodzaj_przecwnika_int==2) rodzaj_przecwnika="Wilk";
+    return *atak, *zycie, *obrona, *rodzaj;
+}
 
-    int dlugosc_nazwy, miejsce; dlugosc_nazwy=rodzaj_przecwnika.length(); miejsce=24-dlugosc_nazwy;
-
+void obliczanie_atak(int wybrany_atak,int rodzaj_przecwnika_int,int szczescie, int lvl_gracz, int lvl_przeciwnik, int obrona_przeciwnik,int atak_gracz, int czyja_tura)
+{
 
 
+    int atak_max=0, atak_min=1000000, atak_normal=0, atak[3], szczescie_ataku, atak_obliczenia, zadane_obrazenia, szansza_na_atak;
 
-    cout<<char(pion_kres); for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<rodzaj_przecwnika; if(dlugosc_nazwy%2!=0){cout<<" ";} for(int i=0; i<miejsce/2; i++){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Atak:   "<<atak_przeciwnik<<"      "; if(atak_przeciwnik<10){cout<<"  ";}else if(atak_przeciwnik<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Zycie:  "<<zycie_przeciwnik<<"      "; if(zycie_przeciwnik<10){cout<<"  ";}else if(zycie_przeciwnik<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(pion_kres)<<"       Obrona: "<<obrona_przeciwnik<<"      "; if(obrona_przeciwnik<10){cout<<"  ";}else if(obrona_przeciwnik<100){cout<<" ";} cout<<char(pion_kres)<<endl;
-    cout<<char(trojnik_prawo); for(int i=0; i<24; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+        for(int i=0; i<=2; i++)
+            {
+                if (wybrany_atak==1)
+                {
+                    if(rodzaj_przecwnika_int==0)
+                        {szansza_na_atak=rand()%20;
+                        cout<<"Szansza: "<<szansza_na_atak<<endl;
+                        if(szansza_na_atak<=5)
+                        {
+                            atak[i]=rand()%(atak_gracz+10)*3;
+                            zadane_obrazenia=atak_obliczenia;
+                        }
+                        else atak[i]=0;
+                        }
+
+
+                        cout<<"Atak: "<<atak[i]<<endl;
+
+
+
+
+
+
+
+                    //atak[i]=rand()%(atak_gracz+10)*2;
+                }
+                else atak[i]=rand()%atak_gracz+10;
+            }
+            getch();
+            
+            if(atak[0]!=0||atak[1]!=0||atak[2]!=0)
+            {
+            for(int i=0; i<3; i++)
+            {
+                if(atak[0]>=atak_max) atak_max=atak[0];
+                else if (atak[0]<=atak_min) atak_min=atak[0];
+                else atak_normal=atak[0];
+
+                if(atak[1]>=atak_max) atak_max=atak[1];
+                else if (atak[1]<=atak_min) atak_min=atak[1];
+                else atak_normal=atak[1];
+
+                if(atak[2]>=atak_max) atak_max=atak[2];
+                else if (atak[2]<=atak_min) atak_min=atak[2];
+                else atak_normal=atak[2];
+                if(atak_normal==0) atak_normal=atak_max;
+            }
+            
+            szczescie_ataku=rand()%20; //Tu można dodać bonusy do szczęścia
+            if(szczescie>0.5*lvl_gracz+0.5*lvl_przeciwnik)
+            {
+                if(szczescie_ataku>=8) atak_obliczenia=atak_max;
+                else atak_obliczenia=atak_normal;
+            }
+            else if(szczescie<0.2*lvl_gracz+0.2*lvl_przeciwnik)
+            {
+                if(szczescie_ataku>=15) atak_obliczenia=atak_normal;
+                else atak_obliczenia=atak_min;
+            }
+            else
+            {
+                if(szczescie_ataku>=16) atak_obliczenia=atak_max;
+                else if(szczescie_ataku>=4) atak_obliczenia=atak_normal;
+                else atak_obliczenia=atak_min;
+            }
+            }
+            else atak_obliczenia=0;
+
+            //zadane_obrazenia=atak_obliczenia;
+            //zadane_obrazenia-=obrona_przeciwnik*0.75;
+
+            wyswietlanie_ataku(atak_obliczenia, zadane_obrazenia, czyja_tura, wybrany_atak);
+
+            //return wybrany_atak, szczescie, lvl_gracz, lvl_przeciwnik, atak_gracz;
+}
+
+void wyswietlanie_ataku(int atak_obliczenia, int zadane_obrazenia, int czyja_tura,int wybrany_atak)
+{
+    string tmp, zast_dlugosc; int zastepcza;
+    if(wybrany_atak==1) {cout<<char(pion_kres); /*SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);*/ cout<<"Silny atak za "<<atak_obliczenia<<"."; SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7); zastepcza=atak_obliczenia; sprintf((char*)tmp.c_str(), "%d", zastepcza); zast_dlugosc = tmp.c_str(); zastepcza=zast_dlugosc.length(); for(int i=0; i<53-15-zastepcza; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;}
+    if(wybrany_atak==0) {cout<<char(pion_kres); /*SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);*/ cout<<"Szybki atak za "<<atak_obliczenia<<"."; SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7); zastepcza=atak_obliczenia; sprintf((char*)tmp.c_str(), "%d", zastepcza); zast_dlugosc = tmp.c_str(); zastepcza=zast_dlugosc.length(); for(int i=0; i<53-16-zastepcza; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;}
+
+    //Miejsca na dodatkowe efekty, np. - obniżenie pancerza, efekt trucizny itp.
+    Sleep(100);
+    cout<<char(pion_kres); /*SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),12);*/ cout<<"Zadane obrażenia "<<zadane_obrazenia<<"."; SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7); zastepcza=zadane_obrazenia; sprintf((char*)tmp.c_str(), "%d", zastepcza); zast_dlugosc = tmp.c_str(); zastepcza=zast_dlugosc.length(); for(int i=0; i<53-18-zastepcza; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;
+    Sleep(100);
+
+    //SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),15);
+
+
+
+    przebieg_walki_zapis(atak_obliczenia, zadane_obrazenia, czyja_tura);
+}
+
+
+void przebieg_walki_zapis(int atak_obliczenia, int zadane_obrazenia, int czyja_tura)
+{
+    //Na początku walki pamiętać, żeby czyścić stary plik z walką
+    fstream plik;
+    plik.open("przebieg_walki.txt",ios::out|ios::app);
+
+
+
+    if(czyja_tura==0)
+    {
+        plik<<"Twoja tura:"<<endl;
+        plik<<"Atak za "<<atak_obliczenia<<"."<<endl;
+        //if(test==1) plik<<"Zablokowane obrażenia: 2"<<endl;
+        //
+        plik<<"Zadane obrażenia "<<zadane_obrazenia<<"."<<endl;
+        plik<<"──────────────────────────"<<endl;
+    }
+    else
+    {
+        plik<<"Tura przeciwnika:"<<endl;
+        plik<<"Atak za "<<atak_obliczenia<<"."<<endl;
+        //if(test==1) plik<<"Zablokowane obrażenia: 2"<<endl;
+        plik<<"Zadane obrażenia "<<zadane_obrazenia<<"."<<endl;
+        plik<<"──────────────────────────"<<endl;
+    }
+    plik.close();
+
+}
+
+void przebieg_walki_wglad()
+{
+    system("cls");
+
+    fstream plik;
+    plik.open("przebieg_walki.txt",ios::in);
+    string linia; int dl;
+
+    cout<<char(rog_l_g); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(rog_p_g)<<endl;
+    cout<<char(pion_kres)<<"      Przebieg walki      "<<char(pion_kres)<<endl;
+    cout<<char(trojnik_prawo); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+
+    while(getline(plik,linia))
+    {
+
+        cout<<char(pion_kres); /*SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),8);*/ cout<<linia; SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),7); dl=linia.length(); for(int i=0; i<26-dl; i++) {cout<<" ";} cout<<char(pion_kres)<<endl;
+
+    }
+    plik.close();
+
+    cout<<char(trojnik_prawo); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(trojnik_lewo)<<endl;
+    cout<<char(pion_kres)<<"      1. Kontunuuj.       "<<char(pion_kres)<<endl;
+    cout<<char(rog_l_d); for(int i=0; i<26; i++) cout<<char(poz_kres); cout<<char(rog_p_d)<<endl;
+    getch();
 }
