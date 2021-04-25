@@ -364,7 +364,7 @@ void gra_kampania()
             }
         }
     break;
-    default: {cout<<"Brak wybranej opcji!"<<endl; Sleep(500);}
+    default: {cout<<"Brak wybranej (dodane w VSC) opcji!"<<endl; Sleep(500);}
     }
 
     }
